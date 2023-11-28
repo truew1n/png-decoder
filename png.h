@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define PNG_PRINT_CHUNK_SIGNATURE
+#define PNG_PRINT_CHUNK_DETAILS
 
 #define PNG_SIGNATURE 0x89504E470D0A1A0A
 #define PNG_IHDR_SIGNATURE 0x49484452
@@ -12,7 +12,7 @@
 #define PNG_IEND_SIGNATURE 0x49454E44
 
 
-
+#include "tool.h"
 
 typedef struct png_ihdr_chunk_t {
     int32_t chunk_size;
@@ -145,7 +145,7 @@ png_t png_open(const char *filepath)
         switch(signature) {
             case PNG_IHDR_SIGNATURE: {
 
-                #ifdef PNG_PRINT_CHUNK_SIGNATURE
+                #ifdef PNG_PRINT_CHUNK_DETAILS
                 printf("%i IHDR\n", chunk_size);
                 #endif
 
@@ -168,7 +168,7 @@ png_t png_open(const char *filepath)
             }
             case PNG_IDAT_SIGNATURE: {
 
-                #ifdef PNG_PRINT_CHUNK_SIGNATURE
+                #ifdef PNG_PRINT_CHUNK_DETAILS
                 printf("%i IDAT\n", chunk_size);
                 #endif
                 
@@ -187,14 +187,26 @@ png_t png_open(const char *filepath)
                 fread(&idat_chunk.crc, sizeof(idat_chunk.crc), 1, file);
 
                 idat_chunk.crc = swap_endian_32t(idat_chunk.crc);
-
-                // printf("%02x\n%02x\n", idat_chunk.compression & 0xFF, idat_chunk.type & 0xFF);
+                
+                #ifdef PNG_PRINT_CHUNK_DETAILS
+                char str1[9] = "";
+                char str2[9] = "";
+                bin((char *) str1, idat_chunk.compression & 0xFF);
+                bin((char *) str2, idat_chunk.type & 0xFF);
+                printf(
+                    "0x%02x - 0b%s - CMF\n0x%02x - 0b%s - FLG\n",
+                    idat_chunk.compression & 0xFF,
+                    str1,
+                    idat_chunk.type & 0xFF,
+                    str2
+                );
+                #endif
 
                 png_vector_add(&png_file.idat_chunk_vector, idat_chunk);
                 break;
             }
             default: {
-                #ifdef PNG_PRINT_CHUNK_SIGNATURE
+                #ifdef PNG_PRINT_CHUNK_DETAILS
                 printf(
                     "%i %c%c%c%c\n",
                     chunk_size,
@@ -214,7 +226,7 @@ png_t png_open(const char *filepath)
 
 png_image_t png_get_image(png_t *png)
 {
-    
+    // TODO: Decompression of DEFLATE Block
     return (png_image_t){
         png->ihdr_chunk.width,
         png->ihdr_chunk.height,
